@@ -1,0 +1,32 @@
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Datasets (large, not needed for inference)
+data/
+
+# Training runs / outputs
+runs/
+
+# IDE / Editor
+.idea/
+.vscode/
+.git/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.md
+LICENSE
+.gitignore
+.gitattributes
+.antigravityignore
