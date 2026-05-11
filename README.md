@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🛣️ DriveSafe Road Crack Detection System
+#  DriveSafe Road Crack Detection System
 
 ### Autonomous road health monitoring
 
@@ -21,7 +21,7 @@ An end-to-end AI-powered platform that detects **road cracks** via semantic segm
 
 ---
 
-## ✨ Features
+##  Features
 
 | Module | Description |
 |--------|-------------|
@@ -36,7 +36,7 @@ An end-to-end AI-powered platform that detects **road cracks** via semantic segm
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```mermaid
 flowchart LR
@@ -72,7 +72,7 @@ flowchart LR
 
 ---
 
-## 🧪 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -86,7 +86,7 @@ flowchart LR
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -94,14 +94,14 @@ flowchart LR
 - **pip** (package manager)
 - **Git**
 
-### 1️⃣ Clone the Repository
+### 1️Clone the Repository
 
 ```bash
 git clone https://github.com/theparamvrsingh/DriveSafe-Road-crack-detection-system.git
 cd DriveSafe-Road-crack-detection-system
 ```
 
-### 2️⃣ Create Virtual Environment
+### 2️ Create Virtual Environment
 
 ```bash
 python -m venv .venv
@@ -113,13 +113,13 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3️⃣ Install Dependencies
+### 3️ Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4️⃣ Prepare Datasets (for training only)
+### 4️Prepare Datasets (for training only)
 
 Download and organize datasets into the following structure:
 
@@ -142,7 +142,7 @@ data/
 | Multi-class Severity | RDD2020 | [Official Site](https://rdd2020.sekilab.global/data/) |
 | GPS-tagged Data | SUT-Crack | [Mendeley](https://data.mendeley.com/datasets/gsbmknrhkv/5) |
 
-### 5️⃣ Train Models (optional — pre-trained weights included)
+### 5️Train Models (optional — pre-trained weights included)
 
 **Segmentation (U-Net):**
 ```bash
@@ -154,7 +154,7 @@ python train.py --data ./data --epochs 10 --batch-size 8 --image_size 448 --save
 python training/train_detection.py
 ```
 
-### 6️⃣ Run the Application
+### 6️ Run the Application
 
 **Quick start (PowerShell):**
 ```powershell
@@ -167,16 +167,16 @@ cd backend
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 7️⃣ Open Dashboard
+### 7️ Open Dashboard
 
 | Endpoint | URL |
 |----------|-----|
-| 🖥️ Dashboard | `http://localhost:8000/` |
-| 💚 Health Check | `http://localhost:8000/api/health` |
+|  Dashboard | `http://localhost:8000/` |
+|  Health Check | `http://localhost:8000/api/health` |
 
 ---
 
-## 📡 API Reference
+##  API Reference
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -189,7 +189,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 DriveSafe-Road-crack-detection-system/
@@ -242,7 +242,7 @@ DriveSafe-Road-crack-detection-system/
 
 ---
 
-## 📊 Model Performance
+## Model Performance
 
 | Model | Task | Metric | Score |
 |-------|------|--------|-------|
@@ -253,7 +253,7 @@ DriveSafe-Road-crack-detection-system/
 
 ---
 
-## ⚠️ Notes
+##  Notes
 
 - If `weights/best_segmentation.pt` is missing, the backend falls back to a classical baseline segmenter so the UI remains fully functional.
 - Uploads and inference outputs are persisted under `backend/storage/` and served at `/storage` for traceability.
@@ -261,7 +261,7 @@ DriveSafe-Road-crack-detection-system/
 
 ---
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
