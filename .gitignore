@@ -22,6 +22,7 @@ logs/
 weights/*.pt
 weights/*.pth
 !weights/.gitkeep
+!weights/best_segmentation_yolo.pt
 
 # Training runs / outputs
 /runs/
