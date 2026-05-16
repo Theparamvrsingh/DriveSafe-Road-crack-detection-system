@@ -60,6 +60,11 @@ def create_app() -> FastAPI:
     if os.path.isdir(storage_dir):
         app.mount("/storage", StaticFiles(directory=storage_dir), name="storage")
 
+    # ✅ ASSETS SERVING FOR DEMO IMAGES
+    assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets"))
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
     return app
 
 

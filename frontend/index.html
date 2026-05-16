@@ -3,38 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DriveSafe — Road Crack Detection System</title>
-    <meta name="description" content="AI-powered road health monitoring platform." />
+    <title>DriveSafe — AI Road Crack Detection System</title>
+    <meta name="description" content="AI-powered road health monitoring platform using U-Net segmentation and YOLOv8 detection for autonomous crack and pothole analysis." />
+    <meta name="theme-color" content="#0a0d14" />
     <base href="/frontend/" />
+
+    <!-- Google Fonts: Inter + JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Space Grotesk', 'system-ui', 'sans-serif'],
-              mono: ['DM Mono', 'monospace'],
-              display: ['Syne', 'sans-serif'],
-            },
-          },
-        },
-      };
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- React 18 via ESM -->
     <script type="importmap">{"imports":{"react":"https://esm.sh/react@18","react-dom/client":"https://esm.sh/react-dom@18/client"}}</script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link rel="stylesheet" href="./style.css" />
+
+    <link rel="stylesheet" href="./style.css?v=2" />
   </head>
-  <body class="noise-layer">
-    <div class="grid-bg"></div>
-    <div class="radial-glow" style="width:700px;height:400px;top:-100px;left:-100px;background:radial-gradient(ellipse,#00d4ff,transparent)"></div>
-    <div class="radial-glow" style="width:500px;height:500px;bottom:-100px;right:-100px;background:radial-gradient(ellipse,#00ffa3,transparent)"></div>
-    <div id="root" style="position:relative;z-index:2;"></div>
-    <script type="text/babel" data-type="module" src="./app.js"></script>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel" data-type="module" src="./app.js?v=2"></script>
   </body>
 </html>
