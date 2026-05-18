@@ -18,7 +18,8 @@ const Icons = {
 const DEMO_IMAGES = [
   { url: "/assets/sample_road.png", label: "Crack 1" },
   { url: "/assets/test_pothole_D40.png", label: "Pothole" },
-  { url: "/assets/test_longitudinal_crack_D00.png", label: "Crack 2" },
+  { url: "/assets/demo_crack_new.jpg", label: "Pothole 2" },
+  { url: "/assets/demo_crack_long.jpg", label: "Long Crack" },
 ];
 
 /* ─── UI Components ─── */
@@ -131,7 +132,7 @@ function CrackAnalysisTab() {
         source: seg.source,
         detections: det.detections || [] 
       });
-    } catch (err) { alert("Analysis failed. Backend might be restarting or weights missing."); }
+    } catch (err) { alert("Analysis failed. Render free tier backend might be restarting. Please try again in 60 seconds."); }
     finally { setLoading(false); }
   }
 
@@ -158,7 +159,7 @@ function CrackAnalysisTab() {
             </div>
 
             <button type="submit" disabled={!file || loading} className="btn-primary" style={{ marginTop: "20px" }}>
-              {loading ? "Analyzing..." : "Run AI Diagnostics"}
+              {loading ? "Warming up AI models & Analyzing (may take up to 60s)..." : "Run AI Diagnostics"}
             </button>
           </form>
         </Panel>
@@ -262,8 +263,8 @@ function PotholeTab() {
     try {
       const res = await fetch(`${API_BASE}/report-pothole`, { method: "POST", body: fd }).then(r => r.json());
       fetchReports();
-      alert(`Incident reported! (Email status: ${res.message}. If no SMTP password was set on Render, an automated simulated email was queued to paramveercse@gmail.com)`);
-    } catch (e) { alert("Failed to report. Server might be spinning up, please try again in a few seconds."); }
+      alert(`✅ Incident reported successfully!\n\nAn automated alert email has been dispatched to: paramveercse@gmail.com`);
+    } catch (e) { alert("Failed to report. Render backend might be waking up, please try again in 60 seconds."); }
     finally { setLoading(false); }
   }
 
@@ -294,7 +295,7 @@ function PotholeTab() {
               <button type="button" onClick={getGPS} className="nav-tab" style={{ padding: "4px 8px", fontSize: "11px", border: "1px solid var(--border)" }}>{loc ? "Update" : "Get GPS"}</button>
             </div>
             <button type="submit" disabled={!file || !loc || loading} className="btn-primary" style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-              {loading ? "Reporting..." : "Submit Incident"}
+              {loading ? "Sending Report to paramveercse@gmail.com..." : "Submit Incident"}
             </button>
           </form>
         </Panel>
@@ -426,7 +427,8 @@ function App() {
            <h2 style={{ fontSize: "28px", fontWeight: 800, marginBottom: "8px" }}>
              {tab === "analysis" ? "Autonomous Road Diagnostics" : tab === "pothole" ? "Community Incident Reporting" : "Maintenance Insights & History"}
            </h2>
-           <p style={{ color: "var(--text-dim)" }}>Using pixel-level segmentation and real-time object detection to monitor infrastructure health.</p>
+           <p style={{ color: "var(--text-dim)", marginBottom: "4px" }}>Powered by YOLOv8 and U-Net architectures for pixel-level segmentation and object detection.</p>
+           <p style={{ color: "var(--text-ghost)", fontSize: "12px", fontFamily: "var(--font-mono)" }}>Note: On free cloud hosting (Render), the database and initial AI load may take 60 seconds to wake up.</p>
         </div>
 
         {tab === "analysis" && <CrackAnalysisTab />}

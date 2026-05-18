@@ -60,8 +60,12 @@ def _build_overlay(img_bgr: np.ndarray, mask_binary: np.ndarray) -> str:
     # Build RGBA overlay
     overlay = img_bgr.copy()
     # Bright orange-red highlight on crack pixels
-    crack_color = np.array([0, 80, 255], dtype=np.uint8)  # BGR: bright red-orange
-    overlay[mask_resized == 1] = overlay[mask_resized == 1] * 0.3 + crack_color * 0.7
+    crack_color = np.array([0, 80, 255], dtype=np.float32)  # BGR: bright red-orange
+    
+    # Use float32 for blending to avoid uint8 overflow/darkening
+    region = overlay[mask_resized == 1].astype(np.float32)
+    blended = region * 0.3 + crack_color * 0.7
+    overlay[mask_resized == 1] = np.clip(blended, 0, 255).astype(np.uint8)
 
     # Add a bright contour around crack regions for extra visibility
     contours, _ = cv2.findContours(mask_resized.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
