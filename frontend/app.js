@@ -159,7 +159,7 @@ function CrackAnalysisTab() {
             </div>
 
             <button type="submit" disabled={!file || loading} className="btn-primary" style={{ marginTop: "20px" }}>
-              {loading ? "Warming up AI models & Analyzing (may take up to 60s)..." : "Run AI Diagnostics"}
+              {loading ? "Analyzing..." : "Run AI Diagnostics"}
             </button>
           </form>
         </Panel>
@@ -263,7 +263,7 @@ function PotholeTab() {
     try {
       const res = await fetch(`${API_BASE}/report-pothole`, { method: "POST", body: fd }).then(r => r.json());
       fetchReports();
-      alert(`✅ Incident reported successfully!\n\nAn automated alert email has been dispatched to: paramveercse@gmail.com`);
+      alert(`Incident reported successfully!\n\nAn automated alert email has been dispatched to: paramveercse@gmail.com`);
     } catch (e) { alert("Failed to report. Render backend might be waking up, please try again in 60 seconds."); }
     finally { setLoading(false); }
   }
@@ -295,7 +295,7 @@ function PotholeTab() {
               <button type="button" onClick={getGPS} className="nav-tab" style={{ padding: "4px 8px", fontSize: "11px", border: "1px solid var(--border)" }}>{loc ? "Update" : "Get GPS"}</button>
             </div>
             <button type="submit" disabled={!file || !loc || loading} className="btn-primary" style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}>
-              {loading ? "Sending Report to paramveercse@gmail.com..." : "Submit Incident"}
+              {loading ? "Reporting..." : "Submit Incident"}
             </button>
           </form>
         </Panel>
@@ -427,8 +427,7 @@ function App() {
            <h2 style={{ fontSize: "28px", fontWeight: 800, marginBottom: "8px" }}>
              {tab === "analysis" ? "Autonomous Road Diagnostics" : tab === "pothole" ? "Community Incident Reporting" : "Maintenance Insights & History"}
            </h2>
-           <p style={{ color: "var(--text-dim)", marginBottom: "4px" }}>Powered by YOLOv8 and U-Net architectures for pixel-level segmentation and object detection.</p>
-           <p style={{ color: "var(--text-ghost)", fontSize: "12px", fontFamily: "var(--font-mono)" }}>Note: On free cloud hosting (Render), the database and initial AI load may take 60 seconds to wake up.</p>
+           <p style={{ color: "var(--text-dim)" }}>Using pixel-level segmentation and real-time object detection to monitor infrastructure health.</p>
         </div>
 
         {tab === "analysis" && <CrackAnalysisTab />}
