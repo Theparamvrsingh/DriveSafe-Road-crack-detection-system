@@ -18,8 +18,7 @@ const Icons = {
 const DEMO_IMAGES = [
   { url: "/assets/sample_road.png", label: "Crack 1" },
   { url: "/assets/test_pothole_D40.png", label: "Pothole" },
-  { url: "/assets/demo_crack_new.jpg", label: "Pothole 2" },
-  { url: "/assets/demo_crack_long.jpg", label: "Long Crack" },
+  { url: "/assets/test_longitudinal_crack_D00.png", label: "Crack 2" },
 ];
 
 /* ─── UI Components ─── */
@@ -176,6 +175,19 @@ function CrackAnalysisTab() {
                 <p style={{ fontSize: "20px", fontWeight: 700, color: result.severity === 'High' ? "var(--red)" : (result.severity === 'Medium' ? "var(--amber)" : "var(--green)") }}>{result.severity || "N/A"}</p>
               </div>
             </div>
+
+            {result.metrics && Object.keys(result.metrics).length > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                <div className="stat-box" style={{ padding: "10px" }}>
+                   <p style={{ fontSize: "9px", color: "var(--text-ghost)", textTransform: "uppercase" }}>Est. Crack Length</p>
+                   <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--cyan)" }}>{result.metrics.crack_length_px?.toFixed(0)} px</p>
+                </div>
+                <div className="stat-box" style={{ padding: "10px" }}>
+                   <p style={{ fontSize: "9px", color: "var(--text-ghost)", textTransform: "uppercase" }}>Max Crack Width</p>
+                   <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--cyan)" }}>{result.metrics.crack_width_p95_px?.toFixed(1)} px</p>
+                </div>
+              </div>
+            )}
             <div style={{ background: "rgba(0,0,0,0.3)", padding: "12px", borderRadius: "8px", border: "1px solid var(--border)", marginBottom: "16px" }}>
                <p style={{ fontSize: "11px", color: "var(--text-dim)", textTransform: "uppercase", marginBottom: "4px" }}>Recommended Action</p>
                <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--cyan)" }}>{result.action || "Inspect Manually"}</p>
