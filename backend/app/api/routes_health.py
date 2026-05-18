@@ -26,10 +26,16 @@ def health():
     seg_loaded = model_loader.seg_model is not None
     det_loaded = model_loader.det_model is not None
 
-    seg_weights = os.path.join(BASE_DIR, "weights", "best_segmentation.pt")
-    det_weights = os.path.join(BASE_DIR, "weights", "best_detection.pt")
+    weights_dir = os.path.join(BASE_DIR, "weights")
+    seg_weights = None
+    for name in ("best_segmentation_yolo.pt", "best_segmentation.pt"):
+        p = os.path.join(weights_dir, name)
+        if os.path.exists(p):
+            seg_weights = p
+            break
+    det_weights = os.path.join(weights_dir, "best_detection.pt")
 
-    seg_size_mb = round(os.path.getsize(seg_weights) / 1e6, 1) if os.path.exists(seg_weights) else 0
+    seg_size_mb = round(os.path.getsize(seg_weights) / 1e6, 1) if seg_weights and os.path.exists(seg_weights) else 0
     det_size_mb = round(os.path.getsize(det_weights) / 1e6, 1) if os.path.exists(det_weights) else 0
 
     return {
@@ -42,7 +48,7 @@ def health():
         "models": {
             "segmentation": {
                 "loaded": seg_loaded,
-                "architecture": "U-Net (custom encoder-decoder)",
+                "architecture": "YOLOv8-seg",
                 "weight_mb": seg_size_mb,
             },
             "detection": {

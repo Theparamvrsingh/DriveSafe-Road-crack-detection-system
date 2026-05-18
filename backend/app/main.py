@@ -1,6 +1,20 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
+
+
+def _load_env() -> None:
+    try:
+        from dotenv import load_dotenv
+        root = Path(__file__).resolve().parents[2]
+        load_dotenv(root / ".env")
+    except ImportError:
+        pass
+
+
+_load_env()
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, JSONResponse

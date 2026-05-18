@@ -42,6 +42,12 @@ def download_weights():
                 print(f"⚠️  Downloaded file too small — likely not a valid weight file. Removed {filename}")
             else:
                 print(f"✅ Downloaded {filename} ({size_mb:.1f} MB)")
+                if filename == "best_segmentation.pt":
+                    alias = os.path.join(WEIGHTS_DIR, "best_segmentation_yolo.pt")
+                    if not os.path.exists(alias):
+                        import shutil
+                        shutil.copy2(filepath, alias)
+                        print("✅ Created alias best_segmentation_yolo.pt")
         except Exception as e:
             print(f"⚠️  Could not download {filename}: {e}")
             if os.path.exists(filepath):

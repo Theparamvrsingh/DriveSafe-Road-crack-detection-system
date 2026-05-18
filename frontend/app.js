@@ -35,6 +35,21 @@ function Panel({ title, icon, children, className = "" }) {
   );
 }
 
+function ImageTile({ src, label, placeholder }) {
+  return (
+    <div style={{ position: "relative", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", background: "#000", height: "200px" }}>
+      {src ? (
+        <img src={src} alt={label} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      ) : (
+        <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <p style={{ color: "var(--text-ghost)", fontSize: "12px" }}>{placeholder || "—"}</p>
+        </div>
+      )}
+      <div style={{ position: "absolute", top: "8px", left: "8px", background: "rgba(0,0,0,0.6)", color: label.includes("MASK") ? "var(--cyan)" : "white", padding: "4px 8px", borderRadius: "4px", fontSize: "10px", fontFamily: "var(--font-mono)" }}>{label}</div>
+    </div>
+  );
+}
+
 /* ─── Leaflet Map ─── */
 function Map({ points, center = [28.6139, 77.209] }) {
   const mapRef = useRef(null);
@@ -56,7 +71,8 @@ function Map({ points, center = [28.6139, 77.209] }) {
     layerRef.current.clearLayers();
     const pts = points.filter(p => typeof p.lat === "number" && typeof p.lon === "number");
     pts.forEach(p => {
-      const color = p.severity === "high" ? "var(--red)" : p.severity === "medium" ? "var(--amber)" : "var(--green)";
+      const sev = (p.severity || "").toLowerCase();
+      const color = sev === "high" ? "var(--red)" : sev === "medium" ? "var(--amber)" : "var(--green)";
       const marker = window.L.circleMarker([p.lat, p.lon], { radius: 8, color, weight: 2, fillColor: color, fillOpacity: 0.7 });
       marker.bindPopup(`<div style="font-size:12px"><b>Severity:</b> ${(p.severity || "N/A").toUpperCase()}<br/><b>Time:</b> ${p.timestamp || "Unknown"}</div>`);
       marker.addTo(layerRef.current);
@@ -97,10 +113,20 @@ function WorkflowOverview() {
 }
 
 /* ─── Crack Analysis Tab ─── */
-function CrackAnalysisTab() {
+function CrackAnalysisTab({ onRecordSaved }) {
   const [file, setFile] = useState(null);
+  const [loc, setLoc] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+
+  function getGPS() {
+    navigator.geolocation.getCurrentPosition(
+      p => setLoc({ lat: p.coords.latitude, lon: p.coords.longitude }),
+      () => setLoc({ lat: 28.6139, lon: 77.2090 })
+    );
+  }
+
+  useEffect(() => { getGPS(); }, []);
 
   async function loadDemoImage(url, filename) {
     try {
@@ -111,28 +137,43 @@ function CrackAnalysisTab() {
     } catch (err) { alert("Failed to load demo image"); }
   }
 
+  function buildFormData() {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (loc) {
+      fd.append("lat", String(loc.lat));
+      fd.append("lon", String(loc.lon));
+    }
+    return fd;
+  }
+
   async function handleAnalyze(e) {
     e.preventDefault();
     if (!file) return;
     setLoading(true);
-    const fd = new FormData(); fd.append("file", file);
     try {
       const [seg, det] = await Promise.all([
-        fetch(`${API_BASE}/predict-segmentation`, { method: "POST", body: fd }).then(r => r.json()),
-        fetch(`${API_BASE}/detect-rdd`, { method: "POST", body: fd }).then(r => r.json())
+        fetch(`${API_BASE}/predict-segmentation`, { method: "POST", body: buildFormData() }).then(r => r.json()),
+        fetch(`${API_BASE}/detect-rdd`, { method: "POST", body: buildFormData() }).then(r => r.json())
       ]);
-      setResult({ 
-        mask: seg.mask_base64, 
+      if (seg.error) throw new Error(seg.error);
+      setResult({
+        mask: seg.mask_base64,
+        overlay: seg.overlay_base64,
         density: seg.crack_percentage,
         severity: seg.severity,
         action: seg.action,
         rationale: seg.rationale,
         metrics: seg.metrics,
         source: seg.source,
-        detections: det.detections || [] 
+        warning: seg.warning,
+        modelLoaded: seg.model_loaded,
+        detections: det.detections || []
       });
-    } catch (err) { alert("Analysis failed. Render free tier backend might be restarting. Please try again in 60 seconds."); }
-    finally { setLoading(false); }
+      if (onRecordSaved) onRecordSaved();
+    } catch (err) {
+      alert("Analysis failed: " + (err.message || "Server may be restarting. Try again in 60 seconds."));
+    } finally { setLoading(false); }
   }
 
   return (
@@ -157,6 +198,13 @@ function CrackAnalysisTab() {
               </div>
             </div>
 
+            <div style={{ margin: "16px 0", padding: "12px", background: "rgba(0,0,0,0.3)", borderRadius: "8px", border: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "12px", fontWeight: 600, fontFamily: "var(--font-mono)", color: loc ? "var(--green)" : "var(--text-dim)" }}>
+                {loc ? `${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}` : "Fetching GPS..."}
+              </span>
+              <button type="button" onClick={getGPS} className="nav-tab" style={{ padding: "4px 8px", fontSize: "11px", border: "1px solid var(--border)" }}>Update GPS</button>
+            </div>
+
             <button type="submit" disabled={!file || loading} className="btn-primary" style={{ marginTop: "20px" }}>
               {loading ? "Analyzing..." : "Run AI Diagnostics"}
             </button>
@@ -175,6 +223,10 @@ function CrackAnalysisTab() {
                 <p style={{ fontSize: "20px", fontWeight: 700, color: result.severity === 'High' ? "var(--red)" : (result.severity === 'Medium' ? "var(--amber)" : "var(--green)") }}>{result.severity || "N/A"}</p>
               </div>
             </div>
+
+            {result.warning && (
+              <p style={{ fontSize: "12px", color: "var(--amber)", marginBottom: "12px", padding: "8px", background: "rgba(245,158,11,0.1)", borderRadius: "6px" }}>{result.warning}</p>
+            )}
 
             {result.metrics && Object.keys(result.metrics).length > 0 && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
@@ -210,28 +262,17 @@ function CrackAnalysisTab() {
         )}
       </div>
 
-      <Panel title="Advanced Visual Overlay" icon={Icons.scan}>
+      <Panel title="Segmentation Output" icon={Icons.scan}>
         {!result && !file && (
           <div style={{ height: "450px", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.3)", borderRadius: "8px", border: "1px dashed var(--border)" }}>
             <p style={{ color: "var(--text-ghost)", fontSize: "14px" }}>Awaiting input image for visual processing...</p>
           </div>
         )}
         {(file || result) && (
-          <div style={{ display: "grid", gridTemplateRows: "auto auto", gap: "16px" }}>
-            <div style={{ position: "relative", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", background: "#000", height: "250px" }}>
-              <img src={file ? URL.createObjectURL(file) : ""} alt="input" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-              <div style={{ position: "absolute", top: "8px", left: "8px", background: "rgba(0,0,0,0.6)", color: "white", padding: "4px 8px", borderRadius: "4px", fontSize: "10px", fontFamily: "var(--font-mono)" }}>ORIGINAL INPUT</div>
-            </div>
-            <div style={{ position: "relative", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)", background: "#000", height: "250px" }}>
-              {result?.mask ? (
-                <img src={result.mask} alt="mask" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-              ) : (
-                <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                   <p style={{ color: "var(--text-ghost)", fontSize: "12px" }}>Mask generating...</p>
-                </div>
-              )}
-              <div style={{ position: "absolute", top: "8px", left: "8px", background: "rgba(0,0,0,0.6)", color: "var(--cyan)", padding: "4px 8px", borderRadius: "4px", fontSize: "10px", fontFamily: "var(--font-mono)" }}>AI SEGMENTATION MASK</div>
-            </div>
+          <div style={{ display: "grid", gridTemplateRows: "auto auto auto", gap: "16px" }}>
+            <ImageTile src={file ? URL.createObjectURL(file) : ""} label="ORIGINAL INPUT" />
+            <ImageTile src={result?.mask} label="BINARY CRACK MASK" placeholder="Run analysis to generate mask" />
+            <ImageTile src={result?.overlay} label="OVERLAY ON ROAD" placeholder="Overlay appears after analysis" />
           </div>
         )}
       </Panel>
@@ -275,7 +316,13 @@ function PotholeTab() {
     try {
       const res = await fetch(`${API_BASE}/report-pothole`, { method: "POST", body: fd }).then(r => r.json());
       fetchReports();
-      alert(`Incident reported successfully!\n\nAn automated alert email has been dispatched to: paramveercse@gmail.com`);
+      if (res.status === "duplicate") {
+        alert(res.message);
+      } else if (res.email?.configured) {
+        alert(`Incident reported! Email alert sent to ${res.email.recipient}`);
+      } else {
+        alert(`Incident saved on server.\n\nEmail NOT sent — admin must set SMTP_PASSWORD on the live server.\nIntended recipient: ${res.email?.recipient || "paramveercse@gmail.com"}`);
+      }
     } catch (e) { alert("Failed to report. Render backend might be waking up, please try again in 60 seconds."); }
     finally { setLoading(false); }
   }
@@ -320,7 +367,7 @@ function PotholeTab() {
 }
 
 /* ─── Maintenance & History Tab ─── */
-function HistoryTab() {
+function HistoryTab({ refreshKey }) {
   const [records, setRecords] = useState([]);
   const [predictions, setPredictions] = useState([]);
   const [generating, setGenerating] = useState(false);
@@ -328,7 +375,7 @@ function HistoryTab() {
   useEffect(() => {
     fetch(`${API_BASE}/records`).then(r => r.json()).then(d => setRecords(d.items || []));
     fetch(`${API_BASE}/predictions`).then(r => r.json()).then(d => setPredictions(d.items || []));
-  }, []);
+  }, [refreshKey]);
 
   async function generatePrediction() {
     if (records.length === 0) return alert("No records available to predict.");
@@ -357,12 +404,12 @@ function HistoryTab() {
         <div style={{ maxHeight: "600px", overflowY: "auto", paddingRight: "8px" }}>
           {records.map((r, i) => (
             <div key={i} className="record-row">
-              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: r.severity === "high" ? "var(--red)" : "var(--green)", marginTop: "4px" }} />
+              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: (r.severity || "").toLowerCase() === "high" ? "var(--red)" : ((r.severity || "").toLowerCase() === "medium" ? "var(--amber)" : "var(--green)"), marginTop: "4px" }} />
               <div>
-                <p style={{ fontSize: "13px", fontWeight: 700 }}>{r.image_path ? r.image_path.split('/').pop() : "Unknown Record"}</p>
-                <p style={{ fontSize: "11px", color: "var(--text-ghost)", fontFamily: "var(--font-mono)" }}>{r.lat}, {r.lon}</p>
+                <p style={{ fontSize: "13px", fontWeight: 700 }}>Inspection #{r.id} · {r.severity || "Unknown"}</p>
+                <p style={{ fontSize: "11px", color: "var(--text-ghost)", fontFamily: "var(--font-mono)" }}>{r.lat != null && r.lon != null ? `${Number(r.lat).toFixed(4)}, ${Number(r.lon).toFixed(4)}` : "No GPS"}</p>
               </div>
-              <span style={{ fontSize: "11px", color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>{r.timestamp?.split('T')[0]}</span>
+              <span style={{ fontSize: "11px", color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>{(r.created_at || "").split("T")[0] || "—"}</span>
             </div>
           ))}
           {records.length === 0 && <p style={{ textAlign: "center", color: "var(--text-ghost)", padding: "40px" }}>No historical records found.</p>}
@@ -402,6 +449,12 @@ function HistoryTab() {
 /* ─── Main App ─── */
 function App() {
   const [tab, setTab] = useState("analysis");
+  const [health, setHealth] = useState(null);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/health`).then(r => r.json()).then(setHealth).catch(() => {});
+  }, []);
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
@@ -428,8 +481,9 @@ function App() {
           </nav>
 
           <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", fontWeight: 600, color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>
-            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--green)", boxShadow: "0 0 8px var(--green)" }} />
-            SYSTEM ACTIVE
+            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: health?.models?.segmentation?.loaded ? "var(--green)" : "var(--amber)", boxShadow: "0 0 8px currentColor" }} />
+            {health?.models?.segmentation?.loaded ? "AI READY" : "MODEL LOADING"}
+            {health && !health.services?.email_configured && <span style={{ marginLeft: "8px", color: "var(--amber)" }}>· EMAIL OFF</span>}
           </div>
         </div>
       </header>
@@ -442,9 +496,9 @@ function App() {
            <p style={{ color: "var(--text-dim)" }}>Using pixel-level segmentation and real-time object detection to monitor infrastructure health.</p>
         </div>
 
-        {tab === "analysis" && <CrackAnalysisTab />}
+        {tab === "analysis" && <CrackAnalysisTab onRecordSaved={() => setHistoryRefresh(k => k + 1)} />}
         {tab === "pothole" && <PotholeTab />}
-        {tab === "history" && <HistoryTab />}
+        {tab === "history" && <HistoryTab refreshKey={historyRefresh} />}
       </main>
 
       <footer className="footer-branding">
