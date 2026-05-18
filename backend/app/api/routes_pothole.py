@@ -66,20 +66,20 @@ async def report_pothole(
     
     # Method 2: Segmentation — crack pixel density
     if model_loader.seg_model:
-        img_resized = cv2.resize(img, (256, 256))
-        img_tensor = img_resized.astype(np.float32) / 255.0
-        img_tensor = np.transpose(img_tensor, (2, 0, 1))
-        img_tensor = np.expand_dims(img_tensor, axis=0)
-        device = next(model_loader.seg_model.parameters()).device
-        img_tensor = torch.tensor(img_tensor).to(device)
-        with torch.no_grad():
-            output = model_loader.seg_model(img_tensor)
-            output = torch.sigmoid(output)
-            mask = (output.cpu().numpy()[0, 0] > 0.5).astype(np.uint8)
-            crack_density = np.sum(mask) / mask.size
-            if crack_density > 0.5:
-                crack_density = 1.0 - crack_density
-            seg_percent = round(crack_density * 100, 1)
+        try:
+            results = model_loader.seg_model(img)
+            result = results[0]
+            if result.masks is not None:
+                masks = result.masks.data.cpu().numpy()
+                mask_binary = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
+                for m in masks:
+                    mask_resized = cv2.resize(m, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
+                    mask_binary = np.logical_or(mask_binary, mask_resized > 0.5).astype(np.uint8)
+                crack_density = np.sum(mask_binary) / mask_binary.size
+                seg_percent = round(crack_density * 100, 1)
+        except Exception as e:
+            print(f"Pothole segmentation failed: {e}")
+            seg_percent = 0.0
     
     # Use whichever model gave a higher damage reading
     severity_percent = round(max(det_percent, seg_percent), 1)
