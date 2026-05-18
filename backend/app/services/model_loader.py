@@ -20,17 +20,13 @@ def load_models():
     # Ensure weights are available (downloads from GitHub Releases if missing)
     download_weights()
     
-    seg_weights = os.path.join(BASE_DIR, "weights", "best_segmentation.pt")
+    seg_weights = os.path.join(BASE_DIR, "weights", "best_segmentation_yolo.pt")
     det_weights = os.path.join(BASE_DIR, "weights", "best_detection.pt")
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    # Load Segmentation Model (U-Net)
+    # Load Segmentation Model (YOLOv8-Seg from HuggingFace)
     if os.path.exists(seg_weights):
-        seg_model = UNet(in_channels=3, out_channels=1).to(device)
-        seg_model.load_state_dict(torch.load(seg_weights, map_location=device))
-        seg_model.eval()
-        print(f"Loaded Segmentation Model from {seg_weights} on {device}")
+        seg_model = YOLO(seg_weights)
+        print(f"Loaded Pretrained YOLO Segmentation Model from {seg_weights}")
     else:
         print(f"Warning: Segmentation weights not found at {seg_weights}")
         seg_model = None

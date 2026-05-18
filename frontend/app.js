@@ -121,7 +121,16 @@ function CrackAnalysisTab() {
         fetch(`${API_BASE}/predict-segmentation`, { method: "POST", body: fd }).then(r => r.json()),
         fetch(`${API_BASE}/detect-rdd`, { method: "POST", body: fd }).then(r => r.json())
       ]);
-      setResult({ mask: seg.mask_base64, density: seg.crack_percentage, detections: det.detections });
+      setResult({ 
+        mask: seg.mask_base64, 
+        density: seg.crack_percentage,
+        severity: seg.severity,
+        action: seg.action,
+        rationale: seg.rationale,
+        metrics: seg.metrics,
+        source: seg.source,
+        detections: det.detections || [] 
+      });
     } catch (err) { alert("Analysis failed. Backend might be restarting or weights missing."); }
     finally { setLoading(false); }
   }
@@ -156,15 +165,20 @@ function CrackAnalysisTab() {
 
         {result ? (
           <Panel title="Diagnostic Results" icon={Icons.trending}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
               <div className="stat-box">
                 <p style={{ fontSize: "10px", color: "var(--text-ghost)", textTransform: "uppercase" }}>Damage Density</p>
                 <p style={{ fontSize: "20px", fontWeight: 700, color: result.density > 10 ? "var(--red)" : "var(--green)" }}>{result.density?.toFixed(1) || 0}%</p>
               </div>
               <div className="stat-box">
-                <p style={{ fontSize: "10px", color: "var(--text-ghost)", textTransform: "uppercase" }}>Issues Found</p>
-                <p style={{ fontSize: "20px", fontWeight: 700, color: "var(--cyan)" }}>{result.detections?.length || 0}</p>
+                <p style={{ fontSize: "10px", color: "var(--text-ghost)", textTransform: "uppercase" }}>Severity Level</p>
+                <p style={{ fontSize: "20px", fontWeight: 700, color: result.severity === 'High' ? "var(--red)" : (result.severity === 'Medium' ? "var(--amber)" : "var(--green)") }}>{result.severity || "N/A"}</p>
               </div>
+            </div>
+            <div style={{ background: "rgba(0,0,0,0.3)", padding: "12px", borderRadius: "8px", border: "1px solid var(--border)", marginBottom: "16px" }}>
+               <p style={{ fontSize: "11px", color: "var(--text-dim)", textTransform: "uppercase", marginBottom: "4px" }}>Recommended Action</p>
+               <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--cyan)" }}>{result.action || "Inspect Manually"}</p>
+               <p style={{ fontSize: "12px", color: "var(--text-dim)", marginTop: "4px" }}>{result.rationale}</p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {result.detections?.map((d, i) => (
@@ -173,6 +187,9 @@ function CrackAnalysisTab() {
                   <span style={{ fontSize: "12px", color: "var(--cyan)" }}>{(d.confidence * 100).toFixed(0)}%</span>
                 </div>
               ))}
+              {result.detections?.length === 0 && (
+                <p style={{ fontSize: "12px", color: "var(--text-dim)" }}>No bounding box detections found.</p>
+              )}
             </div>
           </Panel>
         ) : (
@@ -243,10 +260,10 @@ function PotholeTab() {
     setLoading(true);
     const fd = new FormData(); fd.append("file", file); fd.append("lat", loc.lat); fd.append("lon", loc.lon);
     try {
-      await fetch(`${API_BASE}/report-pothole`, { method: "POST", body: fd });
+      const res = await fetch(`${API_BASE}/report-pothole`, { method: "POST", body: fd }).then(r => r.json());
       fetchReports();
-      alert("Incident reported successfully!");
-    } catch (e) { alert("Failed to report"); }
+      alert(`Incident reported! (Email status: ${res.message}. If no SMTP password was set on Render, an automated simulated email was queued to paramveercse@gmail.com)`);
+    } catch (e) { alert("Failed to report. Server might be spinning up, please try again in a few seconds."); }
     finally { setLoading(false); }
   }
 
@@ -293,11 +310,33 @@ function PotholeTab() {
 function HistoryTab() {
   const [records, setRecords] = useState([]);
   const [predictions, setPredictions] = useState([]);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE}/records`).then(r => r.json()).then(d => setRecords(d.items || []));
     fetch(`${API_BASE}/predictions`).then(r => r.json()).then(d => setPredictions(d.items || []));
   }, []);
+
+  async function generatePrediction() {
+    if (records.length === 0) return alert("No records available to predict.");
+    setGenerating(true);
+    // Use the coordinates of the most recent record
+    const { lat, lon } = records[0];
+    try {
+        const res = await fetch(`${API_BASE}/predict?lat=${lat}&lon=${lon}&horizon_days=30`).then(r => r.json());
+        if (res.detail) {
+            alert("Error: " + res.detail);
+        } else {
+            alert(`Prediction generated successfully! Projected Risk: ${res.risk}`);
+            // Refresh predictions
+            fetch(`${API_BASE}/predictions`).then(r => r.json()).then(d => setPredictions(d.items || []));
+        }
+    } catch (e) {
+        alert("Failed to generate prediction. Server might be asleep.");
+    } finally {
+        setGenerating(false);
+    }
+  }
 
   return (
     <div className="slide-up" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
@@ -336,6 +375,11 @@ function HistoryTab() {
               <p style={{ color: "var(--text-ghost)", fontSize: "14px" }}>Collect more history at a location to unlock predictive analysis.</p>
             </div>
           )}
+          <div style={{ marginTop: "16px" }}>
+            <button onClick={generatePrediction} disabled={generating} className="btn-primary" style={{ width: "100%" }}>
+              {generating ? "Generating..." : "Generate 30-Day Risk Forecast"}
+            </button>
+          </div>
         </div>
       </Panel>
     </div>
