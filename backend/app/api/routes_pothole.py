@@ -14,9 +14,9 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
-from backend.app.services import model_loader
-from backend.app.services.emailer import trigger_pothole_report, get_email_status
-from backend.app.core.config import settings
+from app.services import model_loader
+from app.services.emailer import trigger_pothole_report, get_email_status
+from app.core.config import settings
 
 router = APIRouter()
 DB_PATH = settings.db_path
@@ -59,6 +59,7 @@ async def report_pothole(
             status_code=400,
         )
 
+    model_loader.ensure_models()
     os.makedirs(UPLOADS_DIR, exist_ok=True)
     file_id = str(uuid.uuid4())[:8]
     ext = file.filename.split(".")[-1] if file.filename and "." in file.filename else "jpg"

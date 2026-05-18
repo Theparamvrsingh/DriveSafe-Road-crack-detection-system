@@ -22,6 +22,7 @@ def health():
         sys.path.append(BASE_DIR)
 
     from app.services import model_loader
+    model_loader.ensure_models()
 
     seg_loaded = model_loader.seg_model is not None
     det_loaded = model_loader.det_model is not None

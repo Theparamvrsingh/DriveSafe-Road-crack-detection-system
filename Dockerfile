@@ -36,8 +36,11 @@ RUN pip install --no-cache-dir ultralytics
 # ---- Copy application code ----
 COPY . .
 
+# Pre-download YOLO weights so live inference works without cold-start download
+RUN python -c "from ultralytics import YOLO; YOLO('yolov8n-seg.pt'); YOLO('yolov8n.pt')"
+
 # Create necessary directories with proper permissions
-RUN mkdir -p weights backend/storage/uploads && \
+RUN mkdir -p weights backend/storage/uploads backend/storage/outputs && \
     chown -R appuser:appuser /app
 
 # Weights are copied from the repository by the 'COPY . .' command

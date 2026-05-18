@@ -1,14 +1,15 @@
 import os
 import shutil
+import threading
 from ultralytics import YOLO
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 WEIGHTS_DIR = os.path.join(BASE_DIR, "weights")
 
-from app.services.weight_downloader import download_weights
-
 seg_model = None
 det_model = None
+_load_lock = threading.Lock()
+_loaded = False
 
 
 def _resolve_weight(*candidates: str) -> str | None:
@@ -19,37 +20,51 @@ def _resolve_weight(*candidates: str) -> str | None:
     return None
 
 
-def load_models():
-    global seg_model, det_model
-
-    download_weights()
-
-    # weight_downloader saves best_segmentation.pt; legacy name best_segmentation_yolo.pt
-    seg_weights = _resolve_weight("best_segmentation_yolo.pt", "best_segmentation.pt")
-    if seg_weights and not os.path.exists(os.path.join(WEIGHTS_DIR, "best_segmentation_yolo.pt")):
+def load_models() -> None:
+    global seg_model, det_model, _loaded
+    with _load_lock:
+        if _loaded:
+            return
         try:
-            shutil.copy2(
-                seg_weights,
-                os.path.join(WEIGHTS_DIR, "best_segmentation_yolo.pt"),
-            )
-        except OSError:
-            pass
+            from app.services.weight_downloader import download_weights
+            download_weights()
+        except Exception as exc:
+            print(f"Weight download skipped: {exc}")
 
-    det_weights = _resolve_weight("best_detection.pt")
+        seg_weights = _resolve_weight("best_segmentation_yolo.pt", "best_segmentation.pt")
+        if seg_weights:
+            try:
+                shutil.copy2(seg_weights, os.path.join(WEIGHTS_DIR, "best_segmentation_yolo.pt"))
+            except OSError:
+                pass
 
-    if seg_weights:
-        seg_model = YOLO(seg_weights)
-        print(f"Loaded YOLO segmentation model from {seg_weights}")
-    else:
-        print("Warning: Custom seg weights missing — loading yolov8n-seg.pt pretrained fallback")
-        seg_model = YOLO("yolov8n-seg.pt")
+        det_weights = _resolve_weight("best_detection.pt")
 
-    if det_weights:
-        det_model = YOLO(det_weights)
-        print(f"Loaded YOLO detection model from {det_weights}")
-    else:
-        print("Warning: No detection weights found; using yolov8n.pt fallback")
-        det_model = YOLO("yolov8n.pt")
+        try:
+            if seg_weights:
+                seg_model = YOLO(seg_weights)
+                print(f"Loaded segmentation: {seg_weights}")
+            else:
+                seg_model = YOLO("yolov8n-seg.pt")
+                print("Loaded segmentation fallback: yolov8n-seg.pt")
+        except Exception as exc:
+            print(f"Segmentation model failed: {exc}")
+            seg_model = None
+
+        try:
+            if det_weights:
+                det_model = YOLO(det_weights)
+                print(f"Loaded detection: {det_weights}")
+            else:
+                det_model = YOLO("yolov8n.pt")
+                print("Loaded detection fallback: yolov8n.pt")
+        except Exception as exc:
+            print(f"Detection model failed: {exc}")
+            det_model = None
+
+        _loaded = True
 
 
-load_models()
+def ensure_models() -> None:
+    if not _loaded:
+        load_models()

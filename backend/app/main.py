@@ -46,12 +46,15 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     def _startup() -> None:
-        # Ensure storage directories exist (important for Docker/cloud deploy)
         storage_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "storage"))
         os.makedirs(os.path.join(storage_dir, "uploads"), exist_ok=True)
         os.makedirs(os.path.join(storage_dir, "outputs"), exist_ok=True)
+        os.makedirs(os.path.join(os.path.dirname(__file__), "..", "..", "weights"), exist_ok=True)
         init_db()
         seed_demo_history_if_empty()
+        import threading
+        from app.services import model_loader
+        threading.Thread(target=model_loader.load_models, daemon=True).start()
 
     # API routes
     app.include_router(api_router, prefix="/api")

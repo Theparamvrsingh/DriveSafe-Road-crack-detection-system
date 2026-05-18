@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: drivesafe-road-crack-detection-system
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"

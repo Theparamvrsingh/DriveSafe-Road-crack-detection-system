@@ -14,7 +14,7 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
-from backend.app.services import model_loader
+from app.services import model_loader
 from app.services.severity import compute_metrics, classify_severity
 from app.services.recommendation import recommend_action
 from app.db.sqlite import insert_record
@@ -87,6 +87,7 @@ async def predict_seg(
     lat: Optional[float] = Form(None),
     lon: Optional[float] = Form(None),
 ):
+    model_loader.ensure_models()
     contents = await file.read()
     nparr = np.frombuffer(contents, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -209,6 +210,7 @@ async def predict_seg(
 
 @router.post("/detect-rdd")
 async def detect(file: UploadFile = File(...)):
+    model_loader.ensure_models()
     if model_loader.det_model is None:
         return {"detections": [], "warning": "Detection model not loaded"}
 
